@@ -6,7 +6,7 @@ import numpy as np
 dictionary = aruco.getPredefinedDictionary(aruco.DICT_4X4_250)
 
 # Define the ID and size of the marker to generate
-marker_id = 20
+marker_id = 23
 marker_size = 200
 
 # Generate the marker image

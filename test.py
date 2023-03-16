@@ -4,7 +4,7 @@ import cv2
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
 point1 = [200,200]
-point2 = [100, 50]
+point2 = [100,50]
 
 # Start the video capture loop
 while True:
