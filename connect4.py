@@ -8,9 +8,39 @@ def getkey(thelist, value):
             return i
     return None
 
-def getpoint(key, corners):
-    return [int(corners[key][0][0][0]), int(corners[key][0][0][1])]
+def getpoint(key, corners, cornernumber):
+    return [int(corners[key][0][cornernumber][0]), int(corners[key][0][cornernumber][1])]
 
+def findpitch(coord1, coord2):
+    x1, y1 = coord1
+    x2, y2 = coord2
+    if x2 - x1 == 0:
+        return float('inf')  # vertical line, infinite slope
+    else:
+        return (y2 - y1) / (x2 - x1)
+
+cornerdict = {}
+
+def lineintersection(coord1, pitch1, coord2, pitch2):
+    x1, y1 = coord1
+    x2, y2 = coord2
+    m1 = pitch1
+    m2 = pitch2
+
+    if m1 == m2:
+        return None
+
+    pre1 = m1*x1
+    pre2 = m2*y1
+    f = pre1-x2-pre2+y2
+    r = m1 - m2
+    x = f / r
+
+    pre1 = x-x1
+    pre2 = m1 * pre1
+    y = pre2 + x2
+
+    return (int(x), int(y))
 
 # Define the dictionary and marker size
 dictionary = aruco.getPredefinedDictionary(aruco.DICT_4X4_250)
@@ -37,31 +67,39 @@ while True:
         # Draw the detected markers on the frame
         aruco.drawDetectedMarkers(frame, corners, ids)
 
-        listids = list(ids)
-
         for i in range(20,24,1):
 
-            if i in ids and i-1 in ids:
-                key = getkey(listids, i)
-                otherkey = getkey(listids, i-1)
-                cv2.line(frame, getpoint(key, corners), getpoint(otherkey, corners), (0,0,255), 3)
+            if i not in ids:
+                continue
 
-            elif i in ids and i+3 in ids:
-                key = getkey(listids, i)
-                otherkey = getkey(listids, i+3)
-                cv2.line(frame, getpoint(key, corners), getpoint(otherkey, corners), (0,0,255), 3)
+            if i-1 in ids:
+                key = getkey(ids, i)
+                otherkey = getkey(ids, i-1)
+                cv2.line(frame, getpoint(key, corners, 0), getpoint(otherkey, corners, 0), (0,0,255), 3)
+            elif i+3 in ids:
+                key = getkey(ids, i)
+                otherkey = getkey(ids, i+3)
+                cv2.line(frame, getpoint(key, corners, 0), getpoint(otherkey, corners, 0), (0,0,255), 3)
             
-            if i== 20 and 21 in ids and 22 in ids and 23 in ids:
-                cord21 = getpoint(getkey(listids, 21), corners)
-                cord22 = getpoint(getkey(listids, 22), corners)
-                cord23 = getpoint(getkey(listids, 23), corners)
-
-                cord20 = [cord23[0]+cord21[0]-cord22[0], cord21[1]+cord23[1]-cord22[1]]
-
-                cv2.circle(frame, cord20, 2, (255, 0, 0), 4)
+            cornerdict[i] = {"main": getpoint(getkey(ids,i),corners, 0), 
+                             "v": getpoint(getkey(ids,i),corners, 3 if i%2!=0 else 1), 
+                             "h": getpoint(getkey(ids,i),corners, 1 if i%2!=0 else 3)}
             
+            cornerdict[i]["pv"] = findpitch(cornerdict[i]["main"], cornerdict[i]["v"])
+            cornerdict[i]["ph"] = findpitch(cornerdict[i]["main"], cornerdict[i]["h"])
 
+            if i == 20 and len(cornerdict) == 4:
+                verticalid = 21 #= i+1 if i in [20,22] else i-1
+                horizontalid = 23 #= 22 if i == 21 else 21 if i == 22 else 23 if i == 20 else 20
+    
+                point = lineintersection(cornerdict[verticalid]["main"], cornerdict[verticalid]["pv"],
+                                    cornerdict[horizontalid]["main"], cornerdict[horizontalid]["pv"])
+                
+                print(cornerdict[verticalid]["main"], cornerdict[verticalid]["pv"],
+                                    cornerdict[horizontalid]["main"], cornerdict[horizontalid]["pv"])
 
+                cv2.circle(frame, point, 3, (0,255,255), 10)
+                print(point)
 
 
     # Display the frame
