@@ -15,7 +15,7 @@ def findpitch(coord1, coord2):
     x1, y1 = coord1
     x2, y2 = coord2
     if x2 - x1 == 0:
-        return float('inf')  # vertical line, infinite slope
+        return 100000000
     else:
         return (y2 - y1) / (x2 - x1)
 
@@ -67,40 +67,56 @@ while True:
         # Draw the detected markers on the frame
         aruco.drawDetectedMarkers(frame, corners, ids)
 
+        ids = list(ids)
+
+        for i, key in enumerate(ids):
+            if i not in [20,21,22,23]:
+                ids.remove(key)
+
         for i in range(20,24,1):
 
-            if i not in ids:
+            if i in ids:
+                
+                if i-1 in ids:
+                    key = getkey(ids, i)
+                    otherkey = getkey(ids, i-1)
+                    cv2.line(frame, getpoint(key, corners, 0), getpoint(otherkey, corners, 0), (0,0,255), 3)
+                elif i+3 in ids:
+                    key = getkey(ids, i)
+                    otherkey = getkey(ids, i+3)
+                    cv2.line(frame, getpoint(key, corners, 0), getpoint(otherkey, corners, 0), (0,0,255), 3)
+                
+                cornerdict[i] = {"main": getpoint(getkey(ids,i),corners, 0), 
+                                "v": getpoint(getkey(ids,i),corners, 3 if i%2==0 else 1), 
+                                "h": getpoint(getkey(ids,i),corners, 1 if i%2==0 else 3)}
+                
+                cornerdict[i]["pv"] = findpitch(cornerdict[i]["main"], cornerdict[i]["v"])
+                cornerdict[i]["ph"] = findpitch(cornerdict[i]["main"], cornerdict[i]["h"])
+
+
+            elif len(ids) == 3 and len(cornerdict) == 4:
+
+                vid  = i+1 if i in [20,22] else i-1
+                hid = 22 if i == 21 else 21 if i == 22 else 23 if i == 20 else 20
+
+                point = lineintersection(cornerdict[vid]["main"], cornerdict[vid]["pv"],
+                                         cornerdict[hid]["main"], cornerdict[hid]["ph"])
+                cv2.circle(frame, point, 3, (255,255,0), 6)
+
+
+            else:
                 continue
 
-            if i-1 in ids:
-                key = getkey(ids, i)
-                otherkey = getkey(ids, i-1)
-                cv2.line(frame, getpoint(key, corners, 0), getpoint(otherkey, corners, 0), (0,0,255), 3)
-            elif i+3 in ids:
-                key = getkey(ids, i)
-                otherkey = getkey(ids, i+3)
-                cv2.line(frame, getpoint(key, corners, 0), getpoint(otherkey, corners, 0), (0,0,255), 3)
-            
-            cornerdict[i] = {"main": getpoint(getkey(ids,i),corners, 0), 
-                             "v": getpoint(getkey(ids,i),corners, 3 if i%2!=0 else 1), 
-                             "h": getpoint(getkey(ids,i),corners, 1 if i%2!=0 else 3)}
-            
-            cornerdict[i]["pv"] = findpitch(cornerdict[i]["main"], cornerdict[i]["v"])
-            cornerdict[i]["ph"] = findpitch(cornerdict[i]["main"], cornerdict[i]["h"])
+            # if i == 20:
+            #     v20, h20 = cornerdict[20]["v"], cornerdict[20]["h"]
+            #     pv, ph = cornerdict[i]["pv"], cornerdict[i]["ph"]
 
-            if i == 20 and len(cornerdict) == 4:
-                verticalid = 21 #= i+1 if i in [20,22] else i-1
-                horizontalid = 23 #= 22 if i == 21 else 21 if i == 22 else 23 if i == 20 else 20
-    
-                point = lineintersection(cornerdict[verticalid]["main"], cornerdict[verticalid]["pv"],
-                                    cornerdict[horizontalid]["main"], cornerdict[horizontalid]["pv"])
+            #     cv2.circle(frame, v20, 3, (0,255,255), 6)
+            #     cv2.circle(frame, h20, 3, (255,255,0), 6)
+
+            #     cv2.line(frame, h20, [int(h20[0]-60), int((ph*(-60))+h20[1])], (0,255,0), 3)
+
                 
-                print(cornerdict[verticalid]["main"], cornerdict[verticalid]["pv"],
-                                    cornerdict[horizontalid]["main"], cornerdict[horizontalid]["pv"])
-
-                cv2.circle(frame, point, 3, (0,255,255), 10)
-                print(point)
-
 
     # Display the frame
     cv2.imshow('Frame', frame)
