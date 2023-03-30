@@ -67,16 +67,19 @@ while True:
         # Draw the detected markers on the frame
         aruco.drawDetectedMarkers(frame, corners, ids)
 
-        ids = list(ids)
+        for i in [20,21,22,23]:
+            
+            if len(ids) == 3 and len(cornerdict) == 4 and i not in ids:
 
-        for i, key in enumerate(ids):
-            if i not in [20,21,22,23]:
-                ids.remove(key)
+                vid  = i+1 if i in [20,22] else i-1
+                hid = 22 if i == 21 else 21 if i == 22 else 23 if i == 20 else 20
 
-        for i in range(20,24,1):
-
-            if i in ids:
+                point = lineintersection(cornerdict[vid]["main"], cornerdict[vid]["pv"],
+                                         cornerdict[hid]["main"], cornerdict[hid]["ph"])
+                cv2.circle(frame, point, 3, (0,0,255), 6)
                 
+            elif i in ids:
+
                 if i-1 in ids:
                     key = getkey(ids, i)
                     otherkey = getkey(ids, i-1)
@@ -94,29 +97,6 @@ while True:
                 cornerdict[i]["ph"] = findpitch(cornerdict[i]["main"], cornerdict[i]["h"])
 
 
-            elif len(ids) == 3 and len(cornerdict) == 4:
-
-                vid  = i+1 if i in [20,22] else i-1
-                hid = 22 if i == 21 else 21 if i == 22 else 23 if i == 20 else 20
-
-                point = lineintersection(cornerdict[vid]["main"], cornerdict[vid]["pv"],
-                                         cornerdict[hid]["main"], cornerdict[hid]["ph"])
-                cv2.circle(frame, point, 3, (255,255,0), 6)
-
-
-            else:
-                continue
-
-            # if i == 20:
-            #     v20, h20 = cornerdict[20]["v"], cornerdict[20]["h"]
-            #     pv, ph = cornerdict[i]["pv"], cornerdict[i]["ph"]
-
-            #     cv2.circle(frame, v20, 3, (0,255,255), 6)
-            #     cv2.circle(frame, h20, 3, (255,255,0), 6)
-
-            #     cv2.line(frame, h20, [int(h20[0]-60), int((ph*(-60))+h20[1])], (0,255,0), 3)
-
-                
 
     # Display the frame
     cv2.imshow('Frame', frame)
